@@ -10,6 +10,8 @@ public class User : BaseEntity<int>, IAuditable
     public string LastName { get; set; }
     public string Email { get; set; }
     public string Password { get; set; }
+    public bool IsRegisterConfirmed { get; set; }
+    public string ConfirmGuidCode { get; set; }
 
 
     public DateTime CreatedAt { get; set; }

@@ -52,7 +52,13 @@
                                 <input type="password" asp-for="ConfirmPassword" placeholder="Confirm Password" />
                                 <span asp-validation-for="ConfirmPassword"></span>
                             </div>
-                            <div class="col-12">
+                            <div class="col-6">
+                                @if (!string.IsNullOrEmpty(ViewBag.TimeOutNotice))
+                                {
+                                    <div class="alert alert-danger">
+                                        @ViewBag.TimeOutNotice
+                                    </div>
+                                }
                                 <button class="btn btn-custom-size lg-size btn-pronia-primary">
                                     Register
                                 </button>

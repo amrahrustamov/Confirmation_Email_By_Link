@@ -16,12 +16,14 @@ public class AuthController : Controller
 {
     private readonly PustokDbContext _dbContext;
     private readonly IUserService _userService;
+    private readonly IEmailService _emailService;
 
 
-    public AuthController(PustokDbContext dbContext, IUserService userService)
+    public AuthController(PustokDbContext dbContext, IUserService userService, IEmailService emailService)
     {
         _dbContext = dbContext;
         _userService = userService;
+        _emailService = emailService;
     }
 
     #region Login
@@ -39,6 +41,7 @@ public class AuthController : Controller
     }
 
     [HttpPost]
+    
     public async Task<IActionResult> Login(LoginViewModel model)
     {
         if (!ModelState.IsValid)
@@ -47,7 +50,14 @@ public class AuthController : Controller
         var user = _dbContext.Users.SingleOrDefault(u => u.Email == model.Email);
         if (user is null)
         {
-            ModelState.AddModelError("Password", "Email not found");
+            ModelState.AddModelError("Email", "Email not found");
+            return View(model);
+        }
+       
+        if (user.IsRegisterConfirmed is false)
+        {
+            ViewBag.ConfirmationNotice = "This email is not confirmed yet.";
+
             return View(model);
         }
 
@@ -108,9 +118,36 @@ public class AuthController : Controller
             Email = model.Email,
             Password = BCrypt.Net.BCrypt.HashPassword(model.Password),
         };
+        string guidCode = Guid.NewGuid().ToString();
+        user.ConfirmGuidCode = guidCode;
 
         _dbContext.Add(user);
         _dbContext.SaveChanges();
+
+        User currenUser = _dbContext.Users.Single(u => u.Email == model.Email);
+        _emailService.SendConfirmationEmail(user.Email, currenUser.Id, guidCode);
+
+        return RedirectToAction("Index", "Home");
+    }
+    [HttpGet]
+    public IActionResult ConfirmEmail([FromQuery] int id, [FromQuery] string ConfirmCode)
+    {
+
+        User user = _dbContext.Users.Single(u => u.Id == id && u.ConfirmGuidCode == ConfirmCode);
+        DateTime date = DateTime.UtcNow;
+        if (user is not null)
+        {
+            if (date.Hour - user.CreatedAt.Hour <= 2)
+            {
+                user.IsRegisterConfirmed = true;
+                _dbContext.SaveChanges();
+            }
+            else
+            {
+                ViewBag.TimeOutNotice = "Activation time ended.";
+                return RedirectToAction("Register", "Auth");
+            }
+        }
 
         return RedirectToAction("Index", "Home");
     }

@@ -13,6 +13,7 @@ namespace Pustok.Services.Concretes
         private readonly string _password;
         private readonly int _port;
         private readonly string _smtpServer;
+        private readonly IConfiguration _configuration;
 
         public MailkitEmailService(IConfiguration configuration)
         {
@@ -21,6 +22,18 @@ namespace Pustok.Services.Concretes
             _password = configuration.GetValue<string>("EmailSettings:Password");
             _port = configuration.GetValue<int>("EmailSettings:SmtpPort");
             _smtpServer = configuration.GetValue<string>("EmailSettings:SmtpServer");
+            _configuration = configuration;
+        }
+        public void SendConfirmationEmail(string receipent, int id, string guidCode)
+        {
+            var messageDto = new MessageDto()
+            {
+
+                Subject = "Confirmation of Register",
+                Content = $"Hello {receipent},Follow the link to verify your account: " + _configuration["Server"] + "Auth/ConfirmEmail" + $"?id={id}" + $"&ConfirmCode={guidCode}",
+                Receipents = new List<string> { receipent }
+            };
+            SendEmail(messageDto);
         }
 
         public void SendEmail(string subject, string content, string receipent)
